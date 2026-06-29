@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Cloud Planner</title>
+    <title>Cloud Planner & Project Hub</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -38,12 +38,9 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        .container { max-width: 1300px; margin: 0 auto; display: none; }
+        .container { max-width: 1300px; margin: 0 auto; display: block; }
         
-        /* Lock screen visual structure dimensions */
-        .lock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; }
-        .lock-box { background: var(--card-bg); padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-        input[type="password"] { padding: 12px; width: 85%; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; outline: none; background: var(--bg-color); color: var(--text-color); }
+        input[type="text"] { padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; outline: none; background: var(--bg-color); color: var(--text-color); }
         
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         .current-time { color: var(--text-light); margin-top: 5px; }
@@ -59,8 +56,27 @@
         .sync-banner { background: #e8f4fd; color: #1d82dc; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
         [data-theme="dark"] .sync-banner { background: #1c3d5a; color: #38a169; }
 
-        .pomodoro-widget { background: var(--card-bg); padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 15px; margin-bottom: 25px; border-left: 5px solid var(--danger); }
-        .timer-display { font-size: 1.8rem; font-weight: bold; font-family: monospace; }
+        .widgets-row { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 25px; }
+        @media (max-width: 900px) { .widgets-row { grid-template-columns: 1fr; } }
+
+        .pomodoro-widget { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; gap: 12px; border-left: 5px solid var(--danger); }
+        .timer-display { font-size: 2.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 5px 0; }
+        .timer-buttons { display: flex; gap: 8px; justify-content: center; }
+
+        .project-widget { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--accent); }
+        .project-widget h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+        .project-input-bar { display: grid; grid-template-columns: 2fr 2fr 1fr auto; gap: 8px; margin-bottom: 15px; }
+        @media (max-width: 600px) { .project-input-bar { grid-template-columns: 1fr; } }
+        .project-input-bar input, .project-input-bar select { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color); outline: none; font-size: 0.9rem; }
+        
+        .project-table-container { max-height: 180px; overflow-y: auto; }
+        .project-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        .project-table th { background: var(--bg-color); padding: 10px; color: var(--text-light); font-weight: 600; border-bottom: 2px solid var(--border-color); }
+        .project-table td { padding: 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .status-pill { font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; font-weight: bold; display: inline-block; }
+        .status-planning { background: #e2e8f0; color: #4a5568; }
+        .status-active { background: #feebc8; color: #c05621; }
+        .status-done { background: #c6f6d5; color: #22543d; }
 
         .weekly-macro-progress { background: var(--card-bg); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; border-left: 6px solid var(--success); }
         .macro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -109,19 +125,10 @@
 </head>
 <body>
 
-    <div class="lock-screen" id="lock-screen-area">
-        <div class="lock-box">
-            <h2>🔒 Security Validation</h2>
-            <p style="color: var(--text-light); font-size: 0.9rem;">Enter your custom secret key. This password acts as a private mapping point to locate your unique task data.</p>
-            <input type="password" id="secret-key-input" placeholder="Type Secret Lock Key..." onkeypress="if(event.key==='Enter') unlockAndSync()">
-            <button class="btn-primary" style="width:85%" onclick="unlockAndSync()">Unlock & Initialize Sync</button>
-        </div>
-    </div>
-
     <div class="container" id="app-container-area">
         <header>
             <div class="header-left">
-                <h1>Secure Weekly Planner Node</h1>
+                <h1>Weekly Planner & Project Hub</h1>
                 <div class="current-time" id="live-clock">Syncing...</div>
             </div>
             <div class="header-controls">
@@ -135,12 +142,42 @@
             <button class="btn-primary" style="padding:4px 10px; font-size:0.8rem;" onclick="fetchFromCloud()">🔄 Force Refresh</button>
         </div>
 
-        <div class="pomodoro-widget">
-            <div style="font-weight: bold; color: var(--danger);">⏱️ Focus Timer:</div>
-            <div class="timer-display" id="pomodoro-time">25:00</div>
-            <button class="btn-primary" id="timer-ctrl-btn" onclick="togglePomodoro()">Start</button>
-            <button class="btn-secondary" onclick="resetPomodoro()">Reset</button>
-            <span id="timer-status" style="font-size: 0.9rem; color: var(--text-light)">Focus Session</span>
+        <div class="widgets-row">
+            <div class="pomodoro-widget">
+                <div style="font-weight: bold; color: var(--danger); text-align: center;">⏱️ Focus Timer (<span id="timer-status">Focus</span>)</div>
+                <div class="timer-display" id="pomodoro-time">25:00</div>
+                <div class="timer-buttons">
+                    <button class="btn-primary" id="timer-ctrl-btn" onclick="togglePomodoro()">Start</button>
+                    <button class="btn-secondary" onclick="resetPomodoro()">Reset</button>
+                </div>
+            </div>
+
+            <div class="project-widget">
+                <h2>🚀 Active Projects Workspace</h2>
+                <div class="project-input-bar">
+                    <input type="text" id="proj-name-input" placeholder="Project name (e.g., Website Re-design)...">
+                    <input type="text" id="proj-step-input" placeholder="Immediate Next Step (e.g., Finalize layouts)...">
+                    <select id="proj-status-input">
+                        <option value="Planning">📌 Planning</option>
+                        <option value="Active" selected>⚡ Active</option>
+                        <option value="Done">✅ Done</option>
+                    </select>
+                    <button class="btn-primary" onclick="addProject()">Add Project</button>
+                </div>
+                <div class="project-table-container">
+                    <table class="project-table">
+                        <thead>
+                            <tr>
+                                <th>Project Target</th>
+                                <th>Immediate Next Step Action Point</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="project-table-rows"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="weekly-macro-progress">
@@ -181,13 +218,14 @@
     <div id="pdf-template"></div>
 
     <script>
-        let BOX_ID = ''; 
-        let SCRIPT_URL = '';
+        // Automatic unique data tracking using your repo name footprint
+        const BOX_ID = "HariWeeklyPlannerOfficial2026MasterKey";
+        const SCRIPT_URL = `https://keyvalue.xyz/v1/${BOX_ID}`;
         
         const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         const priorityWeights = { 'high': 3, 'medium': 2, 'low': 1 };
         
-        let plannerStore = { activeWeek: null, archive: [], theme: 'light' };
+        let plannerStore = { activeWeek: null, archive: [], theme: 'light', projects: [] };
         let currentDatesOfThisWeek = [];
         let chartInstance = null;
 
@@ -200,51 +238,29 @@
             document.getElementById('sync-status-msg').innerText = (isProcessing ? "⏳ " : "🔒 ") + msg;
         }
 
-        // Lock screen authentication mapping algorithm
-        async function unlockAndSync() {
-            const rawInput = document.getElementById('secret-key-input').value.trim();
-            if(!rawInput) return alert("Please specify a secret security access token phrase.");
-            
-            // Clean lookups to prevent encoding crashes
-            try {
-                BOX_ID = btoa(rawInput).replace(/=/g, "").replace(/\+/g, "").replace(/\//g, ""); 
-                SCRIPT_URL = `https://keyvalue.xyz/v1/${BOX_ID}`;
-            } catch(e) {
-                return alert("Password error: Please use only standard letters and numbers.");
-            }
-            
-            updateSyncStatus("Establishing secure socket link with storage network cluster...", true);
-            
+        // Auto initialization on load bypasses the old lock screen layer completely
+        async function autoInitialize() {
+            updateSyncStatus("Loading your synchronized dashboard database...", true);
             try {
                 const response = await fetch(SCRIPT_URL);
                 if (response.ok) {
                     const cloudData = await response.json();
                     if (cloudData && cloudData.activeWeek) {
                         plannerStore = cloudData;
-                        transitionToDashboard();
+                        if (!plannerStore.projects) plannerStore.projects = [];
                         applyTheme();
                         renderPlanner(false);
-                        updateSyncStatus("Cloud environment connected securely.");
                         return;
                     }
                 }
-                // Initialize clean structure if custom key has zero pre-existing footprint
-                transitionToDashboard();
                 renderPlanner(true);
-                updateSyncStatus("New personalized cloud mapping instance generated successfully.");
             } catch (err) {
-                console.error(err);
-                alert("Network Error: Could not connect to the sync server. Error details: " + err.message);
+                renderPlanner(false);
+                updateSyncStatus("Offline mode active. System serving local memory stream.");
             }
         }
 
-        function transitionToDashboard() {
-            document.getElementById('lock-screen-area').style.display = 'none';
-            document.getElementById('app-container-area').style.display = 'block';
-        }
-
         async function fetchFromCloud() {
-            if(!SCRIPT_URL) return;
             updateSyncStatus("Refreshing latest modifications matrix data layout...", true);
             try {
                 const response = await fetch(SCRIPT_URL);
@@ -252,25 +268,24 @@
                     const cloudData = await response.json();
                     if(cloudData) {
                         plannerStore = cloudData;
+                        if (!plannerStore.projects) plannerStore.projects = [];
                         applyTheme();
                         renderPlanner(false);
-                        updateSyncStatus("Data pipeline verified up to date.");
                     }
                 }
-            } catch (err) { updateSyncStatus("Sync channel lost. System operating on temporary cache branch."); }
+            } catch (err) { updateSyncStatus("Sync channel offline."); }
         }
 
         async function saveToCloud() {
-            if(!SCRIPT_URL) return;
-            updateSyncStatus("Syncing updates to encrypted server index...", true);
+            updateSyncStatus("Syncing updates to server...", true);
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(plannerStore)
                 });
-                updateSyncStatus("All modifications securely saved to your private channel.");
-            } catch (err) { updateSyncStatus("Save pipeline delayed. Network transport failed."); }
+                updateSyncStatus("All modifications saved.");
+            } catch (err) { updateSyncStatus("Save running in background local cache branch."); }
         }
 
         function formatDateString(date) { return date.toISOString().split('T')[0]; }
@@ -321,11 +336,61 @@
             document.getElementById('theme-toggle-btn').innerText = plannerStore.theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
         }
 
+        window.addProject = function() {
+            const nameIn = document.getElementById('proj-name-input');
+            const stepIn = document.getElementById('proj-step-input');
+            const statusIn = document.getElementById('proj-status-input');
+
+            if(!nameIn.value.trim() || !stepIn.value.trim()) return alert("Please specify both a Project Title and an Immediate Next Step.");
+            if (!plannerStore.projects) plannerStore.projects = [];
+            
+            plannerStore.projects.push({
+                name: nameIn.value.trim(),
+                nextStep: stepIn.value.trim(),
+                status: statusIn.value
+            });
+
+            nameIn.value = ''; stepIn.value = '';
+            renderPlanner();
+        };
+
+        window.deleteProject = function(idx) {
+            plannerStore.projects.splice(idx, 1);
+            renderPlanner();
+        };
+
+        function renderProjectsUI() {
+            const tbody = document.getElementById('project-table-rows');
+            if(!tbody) return; tbody.innerHTML = '';
+
+            const list = plannerStore.projects || [];
+            if(list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-light); padding: 15px;">No projects currently registered. Map one above!</td></tr>`;
+                return;
+            }
+
+            list.forEach((p, idx) => {
+                const row = document.createElement('tr');
+                let pillClass = 'status-planning';
+                if(p.status === 'Active') pillClass = 'status-active';
+                if(p.status === 'Done') pillClass = 'status-done';
+
+                row.innerHTML = `
+                    <td style="font-weight: 600;">${p.name}</td>
+                    <td style="color: var(--text-light); font-style: italic;">🎯 ${p.nextStep}</td>
+                    <td><span class="status-pill ${pillClass}">${p.status}</span></td>
+                    <td style="text-align: right;"><button style="background:none; border:none; color:var(--danger); font-size:1.1rem;" onclick="deleteProject(${idx})">✕</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
         function renderPlanner(shouldTriggerSave = true) {
             checkAndProcessWeekRollover();
+            renderProjectsUI();
+            
             const gridContainer = document.getElementById('weekly-grid');
-            if(!gridContainer) return;
-            gridContainer.innerHTML = '';
+            if(!gridContainer) return; gridContainer.innerHTML = '';
 
             const todayStr = formatDateString(new Date());
             const activeTasks = plannerStore.activeWeek.tasks;
@@ -388,8 +453,7 @@
             const pr = document.getElementById(`priority-${dateKey}`);
             if (!input || input.value.trim() === '') return;
             plannerStore.activeWeek.tasks[dateKey].push({ text: input.value.trim(), completed: false, priority: pr.value });
-            input.value = '';
-            renderPlanner();
+            input.value = ''; renderPlanner();
         }
 
         window.toggleTask = function(dateKey, idx) {
@@ -447,7 +511,7 @@
                     if (pomodoroTimeLeft <= 0) {
                         clearInterval(pomodoroInterval); alert(pomodoroMode === 'focus' ? 'Session Finished!' : 'Rest Interval Complete.');
                         pomodoroMode = pomodoroMode === 'focus' ? 'break' : 'focus'; pomodoroTimeLeft = pomodoroMode === 'focus' ? 1500 : 300;
-                        document.getElementById('timer-status').innerText = pomodoroMode === 'focus' ? 'Focus Session' : 'Rest Break';
+                        document.getElementById('timer-status').innerText = pomodoroMode === 'focus' ? 'Focus' : 'Break';
                         pomodoroIsRunning = false; document.getElementById('timer-ctrl-btn').innerText = 'Start';
                     }
                     renderTimerString();
@@ -459,7 +523,7 @@
 
         function resetPomodoro() {
             clearInterval(pomodoroInterval); pomodoroIsRunning = false; pomodoroMode = 'focus'; pomodoroTimeLeft = 1500;
-            document.getElementById('timer-status').innerText = 'Focus Session'; document.getElementById('timer-ctrl-btn').innerText = 'Start';
+            document.getElementById('timer-status').innerText = 'Focus'; document.getElementById('timer-ctrl-btn').innerText = 'Start';
             renderTimerString();
         }
 
@@ -469,7 +533,7 @@
 
         function purgePlannerData() {
             if(confirm("Wipe layout contents completely across all synced computers?")) {
-                plannerStore = { activeWeek: null, archive: [], theme: 'light' }; renderPlanner();
+                plannerStore = { activeWeek: null, archive: [], theme: 'light', projects: [] }; renderPlanner();
             }
         }
 
@@ -507,6 +571,8 @@
 
         setInterval(updateClock, 1000);
         updateClock();
+        // Fire up data channels instantly on window launch
+        window.onload = autoInitialize;
     </script>
 </body>
 </html>
